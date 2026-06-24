@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dr Hydroguard — Pay with USDT</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0A1A22;
+    --bg-grad:#0D2330;
+    --panel:#0F2530;
+    --panel-2:#143240;
+    --panel-border: rgba(180,220,220,0.10);
+    --ion-cyan:#36E0C0;
+    --ion-cyan-dim: rgba(54,224,192,0.16);
+    --copper:#CE8A4E;
+    --copper-dim: rgba(206,138,78,0.18);
+    --text-hi:#EAF6F4;
+    --text-mid:#9FB8BD;
+    --text-low:#5E7B81;
+    --danger:#E2604F;
+    --danger-dim: rgba(226,96,79,0.16);
+    --radius:14px;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Consolas, monospace;
+    --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --display: "Arial Black", "Helvetica Neue", var(--sans);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(54,224,192,0.10), transparent 60%),
+      radial-gradient(700px 500px at -10% 110%, rgba(206,138,78,0.08), transparent 60%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-grad) 100%);
+    color:var(--text-hi);
+    font-family:var(--sans);
+    min-height:100vh;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--ion-cyan);}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 20px 80px; text-align:center;}
+
+  header.topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:16px;padding:14px 0 28px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:42px;height:42px;border-radius:10px;
+    background:linear-gradient(135deg, var(--ion-cyan), var(--copper));
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--display); font-weight:900; color:#06141A; font-size:18px;
+    flex-shrink:0;
+  }
+  .brand-text h1{
+    font-family:var(--display); font-weight:900; letter-spacing:-0.02em;
+    font-size:21px; margin:0; color:var(--text-hi);
+  }
+  .brand-text p{margin:1px 0 0; font-size:12px; color:var(--text-mid); letter-spacing:0.08em; text-transform:uppercase;}
+
+  .wallet-area{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .chip{
+    font-family:var(--mono); font-size:12px; color:var(--text-mid);
+    background:var(--panel-2); border:1px solid var(--panel-border);
+    padding:7px 11px; border-radius:999px; display:flex; align-items:center; gap:6px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--text-low);flex-shrink:0;}
+  .dot.ok{background:var(--ion-cyan); box-shadow:0 0 6px var(--ion-cyan);}
+  .dot.warn{background:var(--copper); box-shadow:0 0 6px var(--copper);}
+
+  button{font-family:var(--sans); cursor:pointer;}
+  .btn{
+    border:none; border-radius:10px; padding:11px 18px; font-weight:700; font-size:14px;
+    background:var(--ion-cyan); color:#062019; transition:transform .12s ease, opacity .12s ease, box-shadow .12s ease;
+    box-shadow:0 0 0 rgba(54,224,192,0);
+  }
+  .btn:hover:not(:disabled){box-shadow:0 0 22px rgba(54,224,192,0.35); transform:translateY(-1px);}
+  .btn:disabled{opacity:0.45; cursor:not-allowed; transform:none; box-shadow:none;}
+  .btn.secondary{background:transparent; color:var(--text-hi); border:1px solid var(--panel-border);}
+  .btn.secondary:hover:not(:disabled){box-shadow:0 0 16px rgba(255,255,255,0.08);}
+  .btn.danger{background:var(--danger); color:#220A07;}
+  .btn.small{padding:7px 12px; font-size:12.5px; border-radius:8px;}
+  .btn.full{width:100%;}
+
+  .hero{padding:10px 0 34px; border-bottom:1px solid var(--panel-border); margin-bottom:30px; text-align:center;}
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--copper); margin:0 0 12px;
+  }
+  .hero h2{
+    font-family:var(--display); font-weight:900; letter-spacing:-0.02em;
+    font-size:clamp(28px, 5vw, 44px); line-height:1.05; margin:0 auto; max-width:780px;
+  }
+
+  .stats-row{display:flex; gap:12px; margin-bottom:34px; flex-wrap:wrap; justify-content:center;}
+  .stat-chip{
+    flex:1 1 220px; background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius);
+    padding:14px 16px;
+  }
+  .stat-chip .stat-label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-low); margin-bottom:6px; display:block;}
+  .stat-chip .stat-value{font-family:var(--mono); font-size:19px; font-weight:700;}
+  .stat-chip.burn .stat-value{color:var(--copper);}
+  .stat-chip.treasury .stat-value{color:var(--ion-cyan);}
+
+  .banner{
+    border-radius:var(--radius); padding:14px 16px; font-size:13.5px; margin-bottom:24px;
+    display:flex; gap:10px; align-items:center; justify-content:center; border:1px solid var(--panel-border); flex-wrap:wrap;
+  }
+  .banner.warn{background:var(--copper-dim); border-color:rgba(206,138,78,0.35); color:#FBE6CE;}
+  .banner.danger{background:var(--danger-dim); border-color:rgba(226,96,79,0.4); color:#FBD9D3;}
+  .banner code{font-family:var(--mono); background:rgba(0,0,0,0.25); padding:1px 6px; border-radius:5px;}
+
+  .section-head{display:flex; align-items:center; justify-content:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
+  .section-head h3{font-family:var(--display); font-weight:900; font-size:19px; margin:0; letter-spacing:-0.01em;}
+  .section-head .hint{font-size:12.5px; color:var(--text-low); font-family:var(--mono);}
+
+  .products{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:42px;}
+  @media (max-width:720px){.products{grid-template-columns:1fr;}}
+  .card{
+    background:var(--panel); border:1px solid var(--panel-border); border-radius:var(--radius);
+    padding:22px; position:relative; overflow:hidden;
+  }
+  .card.inactive{opacity:0.55;}
+  .card .tag{
+    position:absolute; top:18px; right:18px; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+    padding:4px 9px; border-radius:999px; font-family:var(--mono);
+  }
+  .tag.premium{background:var(--copper-dim); color:#F4C99B;}
+  .tag.economy{background:var(--ion-cyan-dim); color:#9DF2E2;}
+  .card h4{font-family:var(--display); font-weight:900; font-size:20px; margin:0 auto 14px; max-width:75%;}
+
+  .price-panel{
+    position:relative; background:var(--panel-2); border:1px solid var(--panel-border); border-radius:11px;
+    padding:16px; margin-bottom:16px; overflow:hidden;
+  }
+  .price-panel .bubbles{position:absolute; inset:0; overflow:hidden; pointer-events:none;}
+  .price-panel .bubbles span{
+    position:absolute; bottom:-10%; border-radius:50%; opacity:0; background:var(--ion-cyan);
+    animation: rise-tall 5s ease-in infinite;
+  }
+  .price-panel .bubbles span:nth-child(1){left:8%; width:5px;height:5px; animation-delay:.2s;}
+  .price-panel .bubbles span:nth-child(2){left:22%; width:3px;height:3px; animation-delay:1.6s;}
+  .price-panel .bubbles span:nth-child(3){left:40%; width:6px;height:6px; animation-delay:.9s; background:var(--copper);}
+  .price-panel .bubbles span:nth-child(4){left:58%; width:4px;height:4px; animation-delay:2.4s;}
+  .price-panel .bubbles span:nth-child(5){left:74%; width:3px;height:3px; animation-delay:3.1s;}
+  .price-panel .bubbles span:nth-child(6){left:88%; width:5px;height:5px; animation-delay:1.2s; background:var(--copper);}
+  @keyframes rise-tall{
+    0%{transform:translateY(0); opacity:0;}
+    8%{opacity:.55;}
+    90%{opacity:.25;}
+    100%{transform:translateY(-130%); opacity:0;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .price-panel .bubbles span{animation:none; opacity:0;}
+  }
+  .price-panel .label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-low); margin-bottom:6px; position:relative;}
+  .price-panel .amount{font-family:var(--mono); font-size:26px; font-weight:700; color:var(--ion-cyan); position:relative; transition:opacity .25s ease;}
+  .price-panel .amount .sym{font-size:14px; color:var(--text-mid); margin-left:6px;}
+  .price-panel .burn-note{font-size:12px; color:var(--text-mid); margin-top:10px; position:relative;}
+  .price-panel .burn-note b{color:var(--copper);}
+
+  .row-sm{display:flex; justify-content:center; font-size:12.5px; color:var(--text-low); margin-bottom:14px; font-family:var(--mono); gap:8px;}
+  .status-line{font-size:12.5px; min-height:18px; margin-top:10px; color:var(--text-mid);}
+  .status-line.ok{color:var(--ion-cyan);}
+  .status-line.err{color:var(--danger);}
+
+  .table-scroll{width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .orders-table{width:100%; min-width:680px; border-collapse:collapse; font-size:13.5px;}
+  .orders-table th{
+    text-align:center; font-family:var(--mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--text-low); padding:0 10px 10px; border-bottom:1px solid var(--panel-border);
+  }
+  .orders-table td{padding:11px 10px; border-bottom:1px solid var(--panel-border); color:var(--text-hi); text-align:center;}
+  .orders-table td.mono{font-family:var(--mono); color:var(--text-mid);}
+  .empty-state{
+    border:1px dashed var(--panel-border); border-radius:var(--radius); padding:30px; text-align:center;
+    color:var(--text-low); font-size:13.5px;
+  }
+
+  .admin{
+    border:1px solid var(--copper); border-radius:var(--radius); padding:22px; margin-top:42px;
+    background:linear-gradient(180deg, rgba(206,138,78,0.07), transparent);
+  }
+  .admin .section-head h3{color:var(--copper);}
+  .admin-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:720px){.admin-grid{grid-template-columns:1fr;}}
+  .admin-block{background:var(--panel); border:1px solid var(--panel-border); border-radius:11px; padding:16px;}
+  .admin-block h5{margin:0 0 12px; font-size:13px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-mid); font-family:var(--mono);}
+  .field{margin-bottom:10px;}
+  .field label{display:block; font-size:11.5px; color:var(--text-low); margin-bottom:5px; font-family:var(--mono);}
+  .field input{
+    width:100%; background:var(--panel-2); border:1px solid var(--panel-border); border-radius:8px;
+    padding:9px 10px; color:var(--text-hi); font-family:var(--mono); font-size:13px; text-align:left;
+  }
+  .field input:focus, .btn:focus-visible, button:focus-visible{
+    outline:2px solid var(--ion-cyan); outline-offset:2px;
+  }
+  .switch-row{display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px; font-size:13px;}
+  .toggle{
+    width:42px; height:24px; border-radius:999px; background:var(--panel-2); border:1px solid var(--panel-border);
+    position:relative; flex-shrink:0; cursor:pointer;
+  }
+  .toggle .knob{position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--text-low); transition:all .15s ease;}
+  .toggle.on{background:var(--ion-cyan-dim); border-color:var(--ion-cyan);}
+  .toggle.on .knob{left:22px; background:var(--ion-cyan);}
+  .toggle.pending{opacity:.5; pointer-events:none;}
+  .btn-row{display:flex; gap:8px; justify-content:center;}
+  .btn-row .btn{flex:1;}
+
+  footer{margin-top:50px; padding-top:20px; border-top:1px solid var(--panel-border); font-size:12px; color:var(--text-low); font-family:var(--mono);}
+  footer p{margin:4px 0;}
+
+  #toasts{position:fixed; bottom:18px; right:18px; display:flex; flex-direction:column; gap:10px; z-index:999; max-width:340px;}
+  .toast{
+    background:var(--panel-2); border:1px solid var(--panel-border); border-left:3px solid var(--ion-cyan);
+    border-radius:10px; padding:12px 14px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,0.35);
+    animation: slidein .2s ease;
+  }
+  .toast.err{border-left-color:var(--danger);}
+  @keyframes slidein{from{transform:translateY(8px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+
+  @media (max-width:480px){
+    .wrap{padding:14px 14px 60px;}
+    header.topbar{padding:10px 0 22px;}
+    .brand-text h1{font-size:18px;}
+    .hero{padding:6px 0 24px; margin-bottom:24px;}
+    .card{padding:16px;}
+    .card .tag{position:static; display:inline-block; margin-bottom:8px;}
+    .card h4{max-width:100%;}
+    .admin{padding:16px;}
+    .admin-block{padding:14px;}
+    #switchNetBtn{margin-left:0; margin-top:8px; width:100%;}
+    #toasts{left:12px; right:12px; bottom:12px; max-width:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">DH</div>
+      <div class="brand-text">
+        <h1>Dr Hydroguard</h1>
+        <p>Ioniser · Paid in USDT</p>
+      </div>
+    </div>
+    <div class="wallet-area">
+      <div class="chip" id="networkChip"><span class="dot" id="networkDot"></span><span id="networkLabel">Not connected</span></div>
+      <button class="btn" id="connectBtn">Connect Wallet</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <p class="eyebrow">Crypto Checkout · BNB Smart Chain</p>
+    <h2>Buy Dr Hydroguard Ioniser.</h2>
+  </section>
+
+  <div class="stats-row">
+    <div class="stat-chip burn">
+      <span class="stat-label">Total KAVI burned</span>
+      <span class="stat-value" id="statKaviBurned">—</span>
+    </div>
+    <div class="stat-chip burn">
+      <span class="stat-label">Pending burn queue</span>
+      <span class="stat-value" id="statPendingBurn">—</span>
+    </div>
+    <div class="stat-chip treasury">
+      <span class="stat-label">Total sent to treasury</span>
+      <span class="stat-value" id="statTreasuryTotal">—</span>
+    </div>
+    <div class="stat-chip">
+      <span class="stat-label">Total referral paid</span>
+      <span class="stat-value" id="statReferralTotal">—</span>
+    </div>
+    <div class="stat-chip">
+      <span class="stat-label">Dealers registered</span>
+      <span class="stat-value" id="statDealersTotal">—</span>
+    </div>
+  </div>
+
+  <div id="setupBanner" class="banner warn" style="display:none;">
+    ⚠️ Contract address is not configured yet. In the <code>&lt;script&gt;</code> section at the top of this file, replace <code>CONFIG.CONTRACT_ADDRESS</code> with your deployed <code>DrHydroguardPayment</code> contract address.
+  </div>
+  <div id="networkBanner" class="banner danger" style="display:none;">
+    ⚠️ You're on the wrong network. Please switch to <b id="wantedChainName">BNB Smart Chain</b>.
+    <button class="btn small secondary" id="switchNetBtn">Switch Network</button>
+  </div>
+  <div id="pausedBanner" class="banner danger" style="display:none;">
+    ⏸️ The contract is currently paused — the owner has temporarily disabled purchases. New orders are closed for now.
+  </div>
+
+  <section>
+    <div class="section-head">
+      <h3>Dealer Registration</h3>
+      <span class="hint">one-time, required before buying</span>
+    </div>
+    <div class="card" id="dealerCard">
+      <span class="tag premium">One-time</span>
+      <h4>Become a Dealer</h4>
+      <div class="price-panel">
+        <div class="bubbles"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="label">One-time dealer fee</div>
+        <div class="amount" id="dealerFeeAmount">Connect wallet<span class="sym"></span></div>
+        <div class="burn-note" id="dealerBurnNote"></div>
+      </div>
+      <div class="row-sm"><span>Your USDT balance</span><span id="dealerBal">—</span></div>
+      <div class="field">
+        <label>Referrer's wallet address or Dealer ID (optional — must already be a registered dealer)</label>
+        <input type="text" id="referrerInput" placeholder="0x... or Dealer ID, e.g. 482917 (leave blank if none)">
+      </div>
+      <button class="btn full" id="registerBtn" disabled>Connect Wallet</button>
+      <div class="status-line" id="dealerStatus"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h3>Devices</h3>
+      <span class="hint" id="balanceHint"></span>
+    </div>
+    <div class="products" id="productsGrid">
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h3>My Orders</h3>
+      <span class="hint" id="ordersHint"></span>
+    </div>
+    <div id="ordersWrap"><div class="empty-state">Connect your wallet to see your orders.</div></div>
+  </section>
+
+  <section id="adminSection" style="display:none;">
+    <div class="admin">
+      <div class="section-head">
+        <h3>⚙ Admin Panel</h3>
+        <span class="hint">visible to the contract owner only</span>
+      </div>
+      <div class="admin-grid">
+
+        <div class="admin-block">
+          <h5>Premium Device Price</h5>
+          <div class="field">
+            <label>Price (USDT)</label>
+            <input type="number" id="adminPremiumUsd" step="1" min="0" placeholder="1250">
+          </div>
+          <button class="btn small full" data-admin-set-price="0">Update Price</button>
+          <div class="switch-row" style="margin-top:12px;">
+            <div class="toggle" id="togglePremiumActive" data-admin-toggle-active="0"><div class="knob"></div></div>
+            <span>Device active / available for sale</span>
+          </div>
+        </div>
+
+        <div class="admin-block">
+          <h5>Economy Device Price</h5>
+          <div class="field">
+            <label>Price (USDT)</label>
+            <input type="number" id="adminEconomyUsd" step="1" min="0" placeholder="1000">
+          </div>
+          <button class="btn small full" data-admin-set-price="1">Update Price</button>
+          <div class="switch-row" style="margin-top:12px;">
+            <div class="toggle" id="toggleEconomyActive" data-admin-toggle-active="1"><div class="knob"></div></div>
+            <span>Device active / available for sale</span>
+          </div>
+        </div>
+
+        <div class="admin-block">
+          <h5>Burn &amp; Referral Settings</h5>
+          <div class="field">
+            <label>Burn % of every purchase (USDT → KAVI → burned)</label>
+            <input type="number" id="adminBurnPct" step="0.1" min="0" max="100" placeholder="20">
+          </div>
+          <button class="btn small full" id="adminSetBurnBtn">Update Burn %</button>
+          <div class="field" style="margin-top:14px;">
+            <label>Referral % of every purchase (paid to buyer's referrer, if any)</label>
+            <input type="number" id="adminReferralPct" step="0.1" min="0" max="100" placeholder="10">
+          </div>
+          <button class="btn small full" id="adminSetReferralBtn">Update Referral %</button>
+          <div class="field" style="margin-top:14px;">
+            <label>Max swap slippage % (price-impact protection)</label>
+            <input type="number" id="adminSlippagePct" step="0.1" min="0" max="20" placeholder="3">
+          </div>
+          <button class="btn small full" id="adminSetSlippageBtn">Update Slippage</button>
+        </div>
+
+        <div class="admin-block">
+          <h5>Burn Execution</h5>
+          <p style="font-size:12.5px; color:var(--text-mid); margin:0 0 12px;">
+            Burns from purchases and dealer fees accumulate here instead of swapping instantly — this keeps individual sales from showing up as a predictable buy pattern on the DEX. Trigger the batched swap whenever you choose.
+          </p>
+          <div class="row-sm"><span>Pending queue</span><span id="adminPendingBurn">—</span></div>
+          <div class="row-sm"><span>Estimated KAVI out</span><span id="adminPendingBurnKavi">—</span></div>
+          <button class="btn small full" id="adminExecuteBurnBtn" disabled>Execute Burn Now</button>
+        </div>
+
+        <div class="admin-block">
+          <h5>Dealer Settings</h5>
+          <div class="field">
+            <label>One-time dealer fee (USDT)</label>
+            <input type="number" id="adminDealerFee" step="1" min="0" placeholder="200">
+          </div>
+          <button class="btn small full" id="adminSetDealerFeeBtn">Update Dealer Fee</button>
+          <div class="field" style="margin-top:14px;">
+            <label>Dealer fee burn % (rest goes to treasury)</label>
+            <input type="number" id="adminDealerBurnPct" step="0.1" min="0" max="100" placeholder="50">
+          </div>
+          <button class="btn small full" id="adminSetDealerBurnBtn">Update Dealer Burn %</button>
+          <hr style="border-color:var(--panel-border); margin:16px 0;">
+          <div class="field">
+            <label>Manual override — wallet address</label>
+            <input type="text" id="adminDealerAddr" placeholder="0x...">
+          </div>
+          <div class="btn-row">
+            <button class="btn small" id="adminGrantDealerBtn">Grant Dealer</button>
+            <button class="btn small secondary" id="adminRevokeDealerBtn">Revoke Dealer</button>
+          </div>
+          <hr style="border-color:var(--panel-border); margin:16px 0;">
+          <div class="field">
+            <label>Set referrer — dealer address</label>
+            <input type="text" id="adminRefDealerAddr" placeholder="0x... (the dealer)">
+          </div>
+          <div class="field">
+            <label>Referrer address (blank to clear)</label>
+            <input type="text" id="adminRefReferrerAddr" placeholder="0x... (their referrer)">
+          </div>
+          <button class="btn small full" id="adminSetReferrerBtn">Set Referrer</button>
+        </div>
+
+        <div class="admin-block">
+          <h5>Treasury Wallet</h5>
+          <div class="field">
+            <label>Non-burn portion is sent here</label>
+            <input type="text" id="adminTreasury" placeholder="0x...">
+          </div>
+          <button class="btn small full" id="adminSetTreasuryBtn">Update Treasury</button>
+          <hr style="border-color:var(--panel-border); margin:16px 0;">
+          <h5>Emergency</h5>
+          <button class="btn small full danger" id="adminPauseBtn">Pause Purchases</button>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Contract: <span id="footerContract">—</span></p>
+  </footer>
+
+</div>
+
+<div id="toasts"></div>
+
+<script>
+const CONFIG = {
+  CONTRACT_ADDRESS: "0x6090b7C384010C5a62f630dF80eF658FE76A7bb6",
+  CHAIN_ID_HEX: "0x38",
+  CHAIN_ID_DEC: 56,
+  CHAIN_NAME: "BNB Smart Chain",
+  EXPLORER: "https://bscscan.com",
+  RPC_FOR_ADD_CHAIN: "https://bsc-dataseed.binance.org/"
+};
+
+const CONTRACT_ABI = JSON.parse('[{"inputs":[{"internalType":"address","name":"_usdtToken","type":"address"},{"internalType":"address","name":"_kaviToken","type":"address"},{"internalType":"address","name":"_pancakeRouter","type":"address"},{"internalType":"address","name":"_treasury","type":"address"},{"internalType":"uint256","name":"_premiumPriceUSDT","type":"uint256"},{"internalType":"uint256","name":"_economyPriceUSDT","type":"uint256"},{"internalType":"uint256","name":"_burnBps","type":"uint256"},{"internalType":"uint256","name":"_referralBps","type":"uint256"},{"internalType":"uint256","name":"_dealerFeeUSDT","type":"uint256"},{"internalType":"uint256","name":"_dealerBurnBps","type":"uint256"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"EnforcedPause","type":"error"},{"inputs":[],"name":"ExpectedPause","type":"error"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},{"inputs":[],"name":"ReentrancyGuardReentrantCall","type":"error"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"usdtSwapped","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"kaviBurned","type":"uint256"},{"indexed":true,"internalType":"address","name":"executedBy","type":"address"}],"name":"BurnBatchExecuted","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newBurnBps","type":"uint256"}],"name":"BurnBpsUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newBurnBps","type":"uint256"}],"name":"DealerBurnBpsUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newFeeUSDT","type":"uint256"}],"name":"DealerFeeUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"dealer","type":"address"},{"indexed":false,"internalType":"uint256","name":"feePaid","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"burnPortionQueued","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"treasuryPortion","type":"uint256"},{"indexed":false,"internalType":"address","name":"referrer","type":"address"},{"indexed":false,"internalType":"uint256","name":"dealerId","type":"uint256"}],"name":"DealerRegistered","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"dealer","type":"address"},{"indexed":false,"internalType":"bool","name":"status","type":"bool"}],"name":"DealerStatusSet","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"newKaviToken","type":"address"}],"name":"KaviTokenUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Paused","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"enum DrHydroguardPayment.DeviceType","name":"deviceType","type":"uint8"},{"indexed":false,"internalType":"bool","name":"active","type":"bool"}],"name":"ProductActiveSet","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"enum DrHydroguardPayment.DeviceType","name":"deviceType","type":"uint8"},{"indexed":false,"internalType":"uint256","name":"newPriceUSDT","type":"uint256"}],"name":"ProductPriceUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":false,"internalType":"enum DrHydroguardPayment.DeviceType","name":"deviceType","type":"uint8"},{"indexed":false,"internalType":"uint256","name":"usdtPaid","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"usdtBurnPortionQueued","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"usdtReferralPortion","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"usdtTreasuryPortion","type":"uint256"},{"indexed":false,"internalType":"address","name":"referrer","type":"address"},{"indexed":false,"internalType":"uint256","name":"orderId","type":"uint256"}],"name":"PurchaseCompleted","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newReferralBps","type":"uint256"}],"name":"ReferralBpsUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"dealer","type":"address"},{"indexed":true,"internalType":"address","name":"referrer","type":"address"}],"name":"ReferrerUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"newRouter","type":"address"}],"name":"RouterUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newSlippageBps","type":"uint256"}],"name":"SlippageBpsUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newDeadlineSeconds","type":"uint256"}],"name":"SwapDeadlineUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"address","name":"to","type":"address"}],"name":"TokensRescued","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"newTreasury","type":"address"}],"name":"TreasuryUpdated","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"account","type":"address"}],"name":"Unpaused","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"newUsdtToken","type":"address"}],"name":"UsdtTokenUpdated","type":"event"},{"inputs":[],"name":"burnBps","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"buyerOrders","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"dealerBurnBps","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"dealerById","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"dealerFeeUSDT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"dealerIdOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"executeBurn","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"buyer","type":"address"}],"name":"getBuyerOrders","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"orderId","type":"uint256"}],"name":"getOrder","outputs":[{"components":[{"internalType":"address","name":"buyer","type":"address"},{"internalType":"enum DrHydroguardPayment.DeviceType","name":"deviceType","type":"uint8"},{"internalType":"uint256","name":"usdtPaid","type":"uint256"},{"internalType":"uint256","name":"burnPortionQueued","type":"uint256"},{"internalType":"address","name":"referrer","type":"address"},{"internalType":"uint256","name":"referralPaid","type":"uint256"},{"internalType":"uint256","name":"timestamp","type":"uint256"}],"internalType":"struct DrHydroguardPayment.Order","name":"","type":"tuple"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getOrderCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"isDealer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"kaviToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lastBurnExecutedAt","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"orders","outputs":[{"internalType":"address","name":"buyer","type":"address"},{"internalType":"enum DrHydroguardPayment.DeviceType","name":"deviceType","type":"uint8"},{"internalType":"uint256","name":"usdtPaid","type":"uint256"},{"internalType":"uint256","name":"burnPortionQueued","type":"uint256"},{"internalType":"address","name":"referrer","type":"address"},{"internalType":"uint256","name":"referralPaid","type":"uint256"},{"internalType":"uint256","name":"timestamp","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pancakeRouter","outputs":[{"internalType":"contract IPancakeRouter","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"paused","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pendingBurnUSDT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"previewBurnBatch","outputs":[{"internalType":"uint256","name":"pendingUSDT","type":"uint256"},{"internalType":"uint256","name":"estimatedKaviOut","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"previewDealerFee","outputs":[{"internalType":"uint256","name":"feeUSDT","type":"uint256"},{"internalType":"uint256","name":"burnPortionUSDT","type":"uint256"},{"internalType":"uint256","name":"treasuryPortionUSDT","type":"uint256"},{"internalType":"bool","name":"alreadyDealer","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"enum DrHydroguardPayment.DeviceType","name":"deviceType","type":"uint8"},{"internalType":"address","name":"account","type":"address"}],"name":"previewPurchase","outputs":[{"internalType":"uint256","name":"priceUSDT","type":"uint256"},{"internalType":"uint256","name":"burnPortionUSDT","type":"uint256"},{"internalType":"uint256","name":"referralPortionUSDT","type":"uint256"},{"internalType":"uint256","name":"treasuryPortionUSDT","type":"uint256"},{"internalType":"address","name":"referrer","type":"address"},{"internalType":"bool","name":"active","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"enum DrHydroguardPayment.DeviceType","name":"","type":"uint8"}],"name":"products","outputs":[{"internalType":"string","name":"name","type":"string"},{"internalType":"uint256","name":"priceUSDT","type":"uint256"},{"internalType":"bool","name":"active","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"enum DrHydroguardPayment.DeviceType","name":"deviceType","type":"uint8"}],"name":"purchase","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"referralBps","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"referralEarnings","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"referrerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"referrer","type":"address"}],"name":"registerDealer","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"address","name":"to","type":"address"}],"name":"rescueTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"newBurnBps","type":"uint256"}],"name":"setBurnBps","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"newBurnBps","type":"uint256"}],"name":"setDealerBurnBps","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"newFeeUSDT","type":"uint256"}],"name":"setDealerFeeUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"dealer","type":"address"},{"internalType":"bool","name":"status","type":"bool"}],"name":"setDealerStatus","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newKaviToken","type":"address"}],"name":"setKaviToken","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newRouter","type":"address"}],"name":"setPancakeRouter","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"enum DrHydroguardPayment.DeviceType","name":"deviceType","type":"uint8"},{"internalType":"bool","name":"active","type":"bool"}],"name":"setProductActive","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"enum DrHydroguardPayment.DeviceType","name":"deviceType","type":"uint8"},{"internalType":"uint256","name":"newPriceUSDT","type":"uint256"}],"name":"setProductPriceUSDT","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"newReferralBps","type":"uint256"}],"name":"setReferralBps","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"dealer","type":"address"},{"internalType":"address","name":"referrer","type":"address"}],"name":"setReferrerOf","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"newSlippageBps","type":"uint256"}],"name":"setSlippageBps","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"newDeadlineSeconds","type":"uint256"}],"name":"setSwapDeadlineSeconds","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newTreasury","type":"address"}],"name":"setTreasury","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newUsdtToken","type":"address"}],"name":"setUsdtToken","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"slippageBps","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"swapDeadlineSeconds","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalBurnBatchesExecuted","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalDealersRegistered","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalKaviBurned","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalReferralPaid","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalUsdtToTreasury","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"treasury","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"unpause","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"usdtToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"}]');
+
+const ERC20_ABI = [
+  "function symbol() view returns (string)",
+  "function decimals() view returns (uint8)",
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)"
+];
+
+const DEVICES = [
+  { id: 0, key: "premium", tagClass: "premium", tagText: "Premium" },
+  { id: 1, key: "economy", tagClass: "economy", tagText: "Economy" }
+];
+
+let state = {
+  provider: null,
+  signer: null,
+  address: null,
+  contract: null,
+  usdtContract: null,
+  kaviDisplay: null,
+  usdtDecimals: 18,
+  usdtSymbol: "USDT",
+  kaviDecimals: 18,
+  kaviSymbol: "KAVI",
+  isOwner: false,
+  isPaused: false,
+  isDealer: false,
+  burnBps: 0,
+  dealerBurnBps: 0,
+  dealerFeeUSDT: 0n,
+  dealerEstimatedKaviOut: 0n,
+  products: {},
+  pollHandle: null
+};
+
+const $ = (sel) => document.querySelector(sel);
+const fmt2 = (n) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtTok = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 5 });
+
+function toast(msg, isErr) {
+  const el = document.createElement("div");
+  el.className = "toast" + (isErr ? " err" : "");
+  el.textContent = msg;
+  $("#toasts").appendChild(el);
+  setTimeout(() => el.remove(), 6500);
+}
+
+function shortAddr(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
+
+function renderProductCards() {
+  const grid = $("#productsGrid");
+  grid.innerHTML = "";
+  DEVICES.forEach((d) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.id = "card-" + d.id;
+    card.innerHTML = `
+      <span class="tag ${d.tagClass}">${d.tagText}</span>
+      <h4 id="name-${d.id}">Dr Hydroguard ${d.tagText} Device</h4>
+      <div class="price-panel">
+        <div class="bubbles"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="label">Amount to pay</div>
+        <div class="amount" id="price-${d.id}">Connect wallet<span class="sym"></span></div>
+        <div class="burn-note" id="burnNote-${d.id}"></div>
+      </div>
+      <div class="row-sm"><span>Your USDT balance</span><span id="bal-${d.id}">—</span></div>
+      <button class="btn full" id="buy-${d.id}" disabled>Connect Wallet</button>
+      <div class="status-line" id="status-${d.id}"></div>
+    `;
+    grid.appendChild(card);
+    $("#buy-" + d.id).addEventListener("click", () => buy(d.id));
+  });
+}
+
+function setStatus(deviceId, msg, type) {
+  const el = $("#status-" + deviceId);
+  el.textContent = msg || "";
+  el.className = "status-line" + (type ? " " + type : "");
+}
+
+async function connectWallet() {
+  if (!window.ethereum) {
+    toast("Please install MetaMask (or another Web3 wallet).", true);
+    return;
+  }
+  try {
+    state.provider = new ethers.BrowserProvider(window.ethereum);
+    const accounts = await state.provider.send("eth_requestAccounts", []);
+    state.address = accounts[0];
+    state.signer = await state.provider.getSigner();
+
+    window.ethereum.removeAllListeners?.("accountsChanged");
+    window.ethereum.removeAllListeners?.("chainChanged");
+    window.ethereum.on?.("accountsChanged", () => window.location.reload());
+    window.ethereum.on?.("chainChanged", () => window.location.reload());
+
+    $("#connectBtn").textContent = shortAddr(state.address);
+    $("#connectBtn").classList.add("secondary");
+
+    await checkNetwork();
+    await initContracts();
+    await refreshAll();
+
+    if (state.pollHandle) clearInterval(state.pollHandle);
+    state.pollHandle = setInterval(refreshProducts, 20000);
+  } catch (err) {
+    console.error(err);
+    toast(err?.shortMessage || err?.message || "Could not connect wallet.", true);
+  }
+}
+
+async function checkNetwork() {
+  const net = await state.provider.getNetwork();
+  const ok = Number(net.chainId) === CONFIG.CHAIN_ID_DEC;
+  $("#networkBanner").style.display = ok ? "none" : "flex";
+  $("#networkDot").className = "dot " + (ok ? "ok" : "warn");
+  $("#networkLabel").textContent = ok ? CONFIG.CHAIN_NAME : ("Wrong network (chainId " + net.chainId + ")");
+  return ok;
+}
+
+async function switchNetwork() {
+  try {
+    await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CONFIG.CHAIN_ID_HEX }] });
+  } catch (err) {
+    if (err.code === 4902) {
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId: CONFIG.CHAIN_ID_HEX,
+          chainName: CONFIG.CHAIN_NAME,
+          nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },
+          rpcUrls: [CONFIG.RPC_FOR_ADD_CHAIN],
+          blockExplorerUrls: [CONFIG.EXPLORER]
+        }]
+      });
+    } else {
+      toast(err?.message || "Network switch failed.", true);
+      return;
+    }
+  }
+  window.location.reload();
+}
+
+async function initContracts() {
+  if (CONFIG.CONTRACT_ADDRESS === "0x0000000000000000000000000000000000000000") {
+    $("#setupBanner").style.display = "flex";
+    return;
+  }
+  $("#setupBanner").style.display = "none";
+  $("#footerContract").textContent = CONFIG.CONTRACT_ADDRESS;
+
+  state.contract = new ethers.Contract(CONFIG.CONTRACT_ADDRESS, CONTRACT_ABI, state.signer);
+
+  const usdtAddr = await state.contract.usdtToken();
+  state.usdtContract = new ethers.Contract(usdtAddr, ERC20_ABI, state.signer);
+  try {
+    state.usdtDecimals = Number(await state.usdtContract.decimals());
+    state.usdtSymbol = await state.usdtContract.symbol();
+  } catch {
+    state.usdtDecimals = 18;
+    state.usdtSymbol = "USDT";
+  }
+
+  const kaviAddr = await state.contract.kaviToken();
+  state.kaviDisplay = new ethers.Contract(kaviAddr, ERC20_ABI, state.signer);
+  try {
+    state.kaviDecimals = Number(await state.kaviDisplay.decimals());
+    state.kaviSymbol = await state.kaviDisplay.symbol();
+  } catch {
+    state.kaviDecimals = 18;
+    state.kaviSymbol = "KAVI";
+  }
+
+  const ownerAddr = await state.contract.owner();
+  state.isOwner = ownerAddr.toLowerCase() === state.address.toLowerCase();
+  $("#adminSection").style.display = state.isOwner ? "block" : "none";
+}
+
+async function refreshAll() {
+  if (!state.contract) return;
+  await refreshPauseState();
+  await refreshDealerStatus();
+  await refreshProducts();
+  await Promise.all([refreshAdminFields(), refreshStats()]);
+  await refreshOrders();
+}
+
+async function refreshPauseState() {
+  state.isPaused = await state.contract.paused();
+  $("#pausedBanner").style.display = state.isPaused ? "flex" : "none";
+}
+
+async function refreshStats() {
+  if (!state.contract) return;
+  try {
+    const totalBurned = await state.contract.totalKaviBurned();
+    $("#statKaviBurned").textContent = fmtTok(Number(ethers.formatUnits(totalBurned, state.kaviDecimals))) + " " + state.kaviSymbol;
+  } catch {}
+  try {
+    const [pendingUSDT, estimatedKaviOut] = await state.contract.previewBurnBatch();
+    state.pendingBurnUSDT = pendingUSDT;
+    state.pendingBurnEstimatedKaviOut = estimatedKaviOut;
+    $("#statPendingBurn").textContent = fmtTok(Number(ethers.formatUnits(pendingUSDT, state.usdtDecimals))) + " " + state.usdtSymbol;
+    renderBurnExecutionPanel();
+  } catch {}
+  try {
+    const totalTreasury = await state.contract.totalUsdtToTreasury();
+    $("#statTreasuryTotal").textContent = fmtTok(Number(ethers.formatUnits(totalTreasury, state.usdtDecimals))) + " " + state.usdtSymbol;
+  } catch {}
+  try {
+    const totalReferral = await state.contract.totalReferralPaid();
+    $("#statReferralTotal").textContent = fmtTok(Number(ethers.formatUnits(totalReferral, state.usdtDecimals))) + " " + state.usdtSymbol;
+  } catch {}
+  try {
+    const totalDealers = await state.contract.totalDealersRegistered();
+    $("#statDealersTotal").textContent = totalDealers.toString();
+  } catch {}
+}
+
+function renderBurnExecutionPanel() {
+  const pendingNum = Number(ethers.formatUnits(state.pendingBurnUSDT || 0n, state.usdtDecimals));
+  const kaviOutNum = Number(ethers.formatUnits(state.pendingBurnEstimatedKaviOut || 0n, state.kaviDecimals));
+  $("#adminPendingBurn").textContent = fmtTok(pendingNum) + " " + state.usdtSymbol;
+  $("#adminPendingBurnKavi").textContent = "≈ " + fmtTok(kaviOutNum) + " " + state.kaviSymbol;
+  $("#adminExecuteBurnBtn").disabled = !(state.pendingBurnUSDT && state.pendingBurnUSDT > 0n);
+}
+
+async function refreshDealerStatus() {
+  if (!state.contract || !state.address) return;
+  try {
+    const [feeUSDT, , , alreadyDealer] = await state.contract.previewDealerFee(state.address);
+    state.dealerFeeUSDT = feeUSDT;
+    state.isDealer = alreadyDealer;
+  } catch (err) {
+    console.error(err);
+  }
+  try {
+    state.dealerBurnBps = Number(await state.contract.dealerBurnBps());
+  } catch {}
+  try {
+    const earnings = await state.contract.referralEarnings(state.address);
+    state.myReferralEarnings = earnings;
+  } catch {}
+  if (state.isDealer) {
+    try {
+      state.myDealerId = await state.contract.dealerIdOf(state.address);
+    } catch {}
+  }
+
+  if (state.usdtContract) {
+    try {
+      const bal = await state.usdtContract.balanceOf(state.address);
+      $("#dealerBal").textContent = fmtTok(Number(ethers.formatUnits(bal, state.usdtDecimals))) + " " + state.usdtSymbol;
+    } catch {}
+  }
+
+  renderDealerCard();
+}
+
+function renderDealerCard() {
+  const feeNum = Number(ethers.formatUnits(state.dealerFeeUSDT, state.usdtDecimals));
+  const burnPct = state.dealerBurnBps / 100;
+
+  const amountEl = $("#dealerFeeAmount");
+  const noteEl = $("#dealerBurnNote");
+  const btn = $("#registerBtn");
+  const refInput = $("#referrerInput");
+
+  if (state.isDealer) {
+    const earningsNum = Number(ethers.formatUnits(state.myReferralEarnings || 0n, state.usdtDecimals));
+    const idText = state.myDealerId ? state.myDealerId.toString() : "—";
+    amountEl.innerHTML = "Registered ✅ · Dealer ID <b>" + idText + "</b>";
+    noteEl.innerHTML = "Share your Dealer ID with others so they can list you as their referrer. Your referral earnings so far: <b>" + fmtTok(earningsNum) + " " + state.usdtSymbol + "</b>";
+    btn.textContent = "Already a Dealer";
+    btn.disabled = true;
+    refInput.disabled = true;
+    return;
+  }
+
+  amountEl.innerHTML = (state.address ? fmtTok(feeNum) : "—") + ' <span class="sym">' + state.usdtSymbol + "</span>";
+  noteEl.innerHTML = state.address
+    ? "🔥 <b>" + burnPct + "%</b> of this is queued for a batched KAVI burn"
+    : "";
+
+  if (!state.address) {
+    btn.textContent = "Connect Wallet";
+    btn.disabled = true;
+  } else if (state.isPaused) {
+    btn.textContent = "Registration Paused";
+    btn.disabled = true;
+  } else {
+    btn.textContent = "Approve & Register";
+    btn.disabled = false;
+  }
+}
+
+function setDealerStatusLine(msg, type) {
+  const el = $("#dealerStatus");
+  el.textContent = msg || "";
+  el.className = "status-line" + (type ? " " + type : "");
+}
+
+async function registerDealer() {
+  if (!state.contract || !state.usdtContract) return;
+  const btn = $("#registerBtn");
+  btn.disabled = true;
+
+  try {
+    const refRaw = $("#referrerInput").value.trim();
+    let refAddr = "0x0000000000000000000000000000000000000000";
+    if (refRaw) {
+      if (/^\d+$/.test(refRaw)) {
+        setDealerStatusLine("Looking up Dealer ID…");
+        const resolved = await state.contract.dealerById(refRaw);
+        if (!resolved || resolved === "0x0000000000000000000000000000000000000000") {
+          setDealerStatusLine("No dealer found with that ID.", "err");
+          btn.disabled = false;
+          return;
+        }
+        refAddr = resolved;
+      } else if (ethers.isAddress(refRaw)) {
+        refAddr = refRaw;
+      } else {
+        setDealerStatusLine("Enter a valid wallet address or Dealer ID.", "err");
+        btn.disabled = false;
+        return;
+      }
+      const refIsDealer = await state.contract.isDealer(refAddr);
+      if (!refIsDealer) { setDealerStatusLine("That referrer is not a registered dealer.", "err"); btn.disabled = false; return; }
+    }
+
+    setDealerStatusLine("Fetching the latest fee…");
+    const [feeUSDT, , , alreadyDealer] = await state.contract.previewDealerFee(state.address);
+    if (alreadyDealer) {
+      setDealerStatusLine("You're already a registered dealer.", "ok");
+      await refreshDealerStatus();
+      return;
+    }
+
+    const allowance = await state.usdtContract.allowance(state.address, CONFIG.CONTRACT_ADDRESS);
+    if (allowance < feeUSDT) {
+      setDealerStatusLine("Confirm the USDT approval in your wallet…");
+      const approveTx = await state.usdtContract.approve(CONFIG.CONTRACT_ADDRESS, feeUSDT);
+      setDealerStatusLine("Waiting for approval to confirm…");
+      await approveTx.wait();
+      toast("USDT approved ✅");
+    }
+
+    setDealerStatusLine("Confirm dealer registration in your wallet…");
+    const tx = await state.contract.registerDealer(refAddr);
+    setDealerStatusLine("Waiting for the transaction to confirm…");
+    const receipt = await tx.wait();
+
+    setDealerStatusLine("You're now a registered dealer! ✅", "ok");
+    toast("Dealer registration complete — tx: " + shortAddr(receipt.hash));
+    await refreshAll();
+  } catch (err) {
+    console.error(err);
+    const msg = err?.shortMessage || err?.reason || err?.message || "Registration failed.";
+    setDealerStatusLine(msg, "err");
+    toast(msg, true);
+  } finally {
+    await refreshDealerStatus();
+  }
+}
+
+async function refreshProducts() {
+  if (!state.contract) return;
+
+  try {
+    state.burnBps = Number(await state.contract.burnBps());
+  } catch {}
+
+  let balanceTokens = 0;
+  if (state.usdtContract && state.address) {
+    try {
+      const bal = await state.usdtContract.balanceOf(state.address);
+      balanceTokens = Number(ethers.formatUnits(bal, state.usdtDecimals));
+      $("#balanceHint").textContent = "balance: " + fmtTok(balanceTokens) + " " + state.usdtSymbol;
+    } catch {}
+  }
+
+  for (const d of DEVICES) {
+    try {
+      const [priceUSDT, , referralPortionUSDT, , referrer, active] = await state.contract.previewPurchase(d.id, state.address);
+      state.products[d.id] = { priceUSDT, active };
+
+      const card = $("#card-" + d.id);
+      card.classList.toggle("inactive", !active);
+
+      const priceNum = Number(ethers.formatUnits(priceUSDT, state.usdtDecimals));
+      const amountEl = $("#price-" + d.id);
+      amountEl.style.opacity = 0.3;
+      setTimeout(() => {
+        amountEl.innerHTML = (active ? fmtTok(priceNum) : "—") + ' <span class="sym">' + state.usdtSymbol + "</span>";
+        amountEl.style.opacity = 1;
+      }, 150);
+
+      const burnPct = (state.burnBps / 100);
+      let note = "";
+      if (active) {
+        note = "🔥 <b>" + burnPct + "%</b> of this is queued for a batched KAVI burn";
+        if (referrer && referrer !== "0x0000000000000000000000000000000000000000") {
+          const refAmt = Number(ethers.formatUnits(referralPortionUSDT, state.usdtDecimals));
+          note += " · " + fmtTok(refAmt) + " " + state.usdtSymbol + " to your referrer (" + shortAddr(referrer) + ")";
+        }
+      }
+      $("#burnNote-" + d.id).innerHTML = note;
+
+      $("#bal-" + d.id).textContent = state.address ? fmtTok(balanceTokens) + " " + state.usdtSymbol : "—";
+
+      const buyBtn = $("#buy-" + d.id);
+      if (!state.address) {
+        buyBtn.textContent = "Connect Wallet";
+        buyBtn.disabled = true;
+      } else if (state.isPaused) {
+        buyBtn.textContent = "Purchases Paused";
+        buyBtn.disabled = true;
+      } else if (!state.isDealer) {
+        buyBtn.textContent = "Register as Dealer First";
+        buyBtn.disabled = true;
+      } else if (!active) {
+        buyBtn.textContent = "Currently Unavailable";
+        buyBtn.disabled = true;
+      } else {
+        buyBtn.textContent = "Approve & Buy";
+        buyBtn.disabled = false;
+      }
+    } catch (err) {
+      console.error("product " + d.id + " quote failed", err);
+      $("#price-" + d.id).textContent = "price unavailable";
+    }
+  }
+}
+
+async function refreshOrders() {
+  if (!state.contract || !state.address) return;
+  const wrap = $("#ordersWrap");
+  try {
+    const ids = await state.contract.getBuyerOrders(state.address);
+    if (ids.length === 0) {
+      wrap.innerHTML = '<div class="empty-state">No orders yet. They will show up here after you buy.</div>';
+      $("#ordersHint").textContent = "";
+      return;
+    }
+    $("#ordersHint").textContent = ids.length + " order(s)";
+    const rows = await Promise.all(ids.slice().reverse().map(async (id) => {
+      const o = await state.contract.getOrder(id);
+      const device = DEVICES.find((d) => d.id === Number(o.deviceType));
+      const usdtAmt = Number(ethers.formatUnits(o.usdtPaid, state.usdtDecimals));
+      const burnQueuedAmt = Number(ethers.formatUnits(o.burnPortionQueued, state.usdtDecimals));
+      const refPaidAmt = Number(ethers.formatUnits(o.referralPaid, state.usdtDecimals));
+      const date = new Date(Number(o.timestamp) * 1000).toLocaleString();
+      return `<tr>
+        <td>#${id}</td>
+        <td>${device ? device.tagText + " Device" : "Device " + o.deviceType}</td>
+        <td class="mono">${fmtTok(usdtAmt)} ${state.usdtSymbol}</td>
+        <td class="mono">${fmtTok(burnQueuedAmt)} ${state.usdtSymbol}</td>
+        <td class="mono">${refPaidAmt > 0 ? fmtTok(refPaidAmt) + " " + state.usdtSymbol : "—"}</td>
+        <td class="mono">${date}</td>
+      </tr>`;
+    }));
+    wrap.innerHTML = `<div class="table-scroll"><table class="orders-table">
+      <thead><tr><th>Order</th><th>Device</th><th>USDT Paid</th><th>Burn Queued</th><th>Referral Paid</th><th>When</th></tr></thead>
+      <tbody>${rows.join("")}</tbody>
+    </table></div>`;
+  } catch (err) {
+    console.error(err);
+    wrap.innerHTML = '<div class="empty-state">Could not load orders.</div>';
+  }
+}
+
+async function buy(deviceId) {
+  if (!state.contract || !state.usdtContract) return;
+  const buyBtn = $("#buy-" + deviceId);
+  buyBtn.disabled = true;
+
+  try {
+    setStatus(deviceId, "Fetching the latest price…");
+    const [priceUSDT, , , , , active] = await state.contract.previewPurchase(deviceId, state.address);
+    if (!active) { setStatus(deviceId, "This device is not available right now.", "err"); buyBtn.disabled = false; return; }
+
+    const allowance = await state.usdtContract.allowance(state.address, CONFIG.CONTRACT_ADDRESS);
+
+    if (allowance < priceUSDT) {
+      setStatus(deviceId, "Confirm the USDT approval in your wallet…");
+      const approveTx = await state.usdtContract.approve(CONFIG.CONTRACT_ADDRESS, priceUSDT);
+      setStatus(deviceId, "Waiting for approval to confirm…");
+      await approveTx.wait();
+      toast("USDT approved ✅");
+    }
+
+    setStatus(deviceId, "Confirm the purchase in your wallet…");
+    const tx = await state.contract.purchase(deviceId);
+    setStatus(deviceId, "Waiting for the transaction to confirm…");
+    const receipt = await tx.wait();
+
+    setStatus(deviceId, "Purchase complete! ✅", "ok");
+    toast("Order placed — tx: " + shortAddr(receipt.hash));
+    await refreshAll();
+  } catch (err) {
+    console.error(err);
+    const msg = err?.shortMessage || err?.reason || err?.message || "Purchase failed.";
+    setStatus(deviceId, msg, "err");
+    toast(msg, true);
+  } finally {
+    buyBtn.disabled = state.isPaused || false;
+    await refreshProducts();
+  }
+}
+
+async function refreshAdminFields() {
+  if (!state.isOwner) return;
+  const premium = state.products[0];
+  const economy = state.products[1];
+  if (premium) {
+    $("#adminPremiumUsd").value = Number(ethers.formatUnits(premium.priceUSDT, state.usdtDecimals));
+    $("#togglePremiumActive").classList.toggle("on", premium.active);
+  }
+  if (economy) {
+    $("#adminEconomyUsd").value = Number(ethers.formatUnits(economy.priceUSDT, state.usdtDecimals));
+    $("#toggleEconomyActive").classList.toggle("on", economy.active);
+  }
+  $("#adminBurnPct").value = state.burnBps / 100;
+  try {
+    const refBps = Number(await state.contract.referralBps());
+    $("#adminReferralPct").value = refBps / 100;
+  } catch {}
+  try {
+    const slip = Number(await state.contract.slippageBps());
+    $("#adminSlippagePct").value = slip / 100;
+  } catch {}
+  try {
+    const fee = await state.contract.dealerFeeUSDT();
+    $("#adminDealerFee").value = Number(ethers.formatUnits(fee, state.usdtDecimals));
+  } catch {}
+  $("#adminDealerBurnPct").value = state.dealerBurnBps / 100;
+  try {
+    const t = await state.contract.treasury();
+    $("#adminTreasury").value = t;
+  } catch {}
+  $("#adminPauseBtn").textContent = state.isPaused ? "Unpause Purchases" : "Pause Purchases";
+}
+
+async function adminSetPrice(deviceId) {
+  const inputId = deviceId === 0 ? "#adminPremiumUsd" : "#adminEconomyUsd";
+  const val = parseFloat($(inputId).value);
+  if (!val || val <= 0) { toast("Enter a valid USDT price.", true); return; }
+  try {
+    toast("Sending price update transaction…");
+    const tx = await state.contract.setProductPriceUSDT(deviceId, ethers.parseUnits(val.toString(), state.usdtDecimals));
+    await tx.wait();
+    toast("Price updated ✅");
+    await refreshAll();
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Price update failed.", true);
+  }
+}
+
+async function adminToggleActive(deviceId) {
+  const current = state.products[deviceId]?.active;
+  const toggleId = deviceId === 0 ? "#togglePremiumActive" : "#toggleEconomyActive";
+  const toggleEl = $(toggleId);
+  toggleEl.classList.add("pending");
+  try {
+    toast("Confirm the transaction in your wallet…");
+    const tx = await state.contract.setProductActive(deviceId, !current);
+    toast("Waiting for the transaction to confirm…");
+    await tx.wait();
+    toast("Device status updated ✅");
+    await refreshAll();
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Status update failed.", true);
+  } finally {
+    toggleEl.classList.remove("pending");
+  }
+}
+
+async function adminSetBurnPct() {
+  const pct = parseFloat($("#adminBurnPct").value);
+  if (isNaN(pct) || pct < 0 || pct > 100) { toast("Enter a burn % between 0 and 100.", true); return; }
+  const bps = Math.round(pct * 100);
+  try {
+    toast("Sending burn % update…");
+    const tx = await state.contract.setBurnBps(bps);
+    await tx.wait();
+    toast("Burn % updated ✅");
+    await refreshAll();
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Burn % update failed.", true);
+  }
+}
+
+async function adminSetSlippage() {
+  const pct = parseFloat($("#adminSlippagePct").value);
+  if (isNaN(pct) || pct < 0 || pct > 20) { toast("Enter a slippage % between 0 and 20.", true); return; }
+  const bps = Math.round(pct * 100);
+  try {
+    toast("Sending slippage update…");
+    const tx = await state.contract.setSlippageBps(bps);
+    await tx.wait();
+    toast("Slippage tolerance updated ✅");
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Slippage update failed.", true);
+  }
+}
+
+async function adminSetReferral() {
+  const pct = parseFloat($("#adminReferralPct").value);
+  if (isNaN(pct) || pct < 0 || pct > 100) { toast("Enter a referral % between 0 and 100.", true); return; }
+  const bps = Math.round(pct * 100);
+  try {
+    toast("Sending referral % update…");
+    const tx = await state.contract.setReferralBps(bps);
+    await tx.wait();
+    toast("Referral % updated ✅");
+    await refreshAll();
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Referral % update failed.", true);
+  }
+}
+
+async function adminExecuteBurn() {
+  const btn = $("#adminExecuteBurnBtn");
+  btn.disabled = true;
+  try {
+    toast("Confirm the burn execution in your wallet…");
+    const tx = await state.contract.executeBurn();
+    toast("Waiting for the transaction to confirm…");
+    const receipt = await tx.wait();
+    toast("Burn batch executed ✅ — tx: " + shortAddr(receipt.hash));
+    await refreshAll();
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Burn execution failed.", true);
+    await refreshStats();
+  }
+}
+
+async function adminSetDealerFee() {
+  const val = parseFloat($("#adminDealerFee").value);
+  if (!val || val <= 0) { toast("Enter a valid dealer fee.", true); return; }
+  try {
+    toast("Sending dealer fee update…");
+    const tx = await state.contract.setDealerFeeUSDT(ethers.parseUnits(val.toString(), state.usdtDecimals));
+    await tx.wait();
+    toast("Dealer fee updated ✅");
+    await refreshAll();
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Dealer fee update failed.", true);
+  }
+}
+
+async function adminSetDealerBurn() {
+  const pct = parseFloat($("#adminDealerBurnPct").value);
+  if (isNaN(pct) || pct < 0 || pct > 100) { toast("Enter a burn % between 0 and 100.", true); return; }
+  const bps = Math.round(pct * 100);
+  try {
+    toast("Sending dealer burn % update…");
+    const tx = await state.contract.setDealerBurnBps(bps);
+    await tx.wait();
+    toast("Dealer burn % updated ✅");
+    await refreshAll();
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Dealer burn % update failed.", true);
+  }
+}
+
+async function adminSetDealerStatusFor(status) {
+  const addr = $("#adminDealerAddr").value.trim();
+  if (!ethers.isAddress(addr)) { toast("Enter a valid wallet address.", true); return; }
+  try {
+    toast(status ? "Granting dealer status…" : "Revoking dealer status…");
+    const tx = await state.contract.setDealerStatus(addr, status);
+    await tx.wait();
+    toast(status ? "Dealer status granted ✅" : "Dealer status revoked ✅");
+    await refreshStats();
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Action failed.", true);
+  }
+}
+
+async function adminSetReferrerOverride() {
+  const dealerAddr = $("#adminRefDealerAddr").value.trim();
+  const refAddrRaw = $("#adminRefReferrerAddr").value.trim();
+  if (!ethers.isAddress(dealerAddr)) { toast("Enter a valid dealer wallet address.", true); return; }
+  const refAddr = refAddrRaw || "0x0000000000000000000000000000000000000000";
+  if (refAddrRaw && !ethers.isAddress(refAddrRaw)) { toast("Enter a valid referrer wallet address.", true); return; }
+  try {
+    toast("Sending referrer update…");
+    const tx = await state.contract.setReferrerOf(dealerAddr, refAddr);
+    await tx.wait();
+    toast("Referrer updated ✅");
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Referrer update failed.", true);
+  }
+}
+
+async function adminSetTreasury() {
+  const addr = $("#adminTreasury").value.trim();
+  if (!ethers.isAddress(addr)) { toast("Enter a valid wallet address.", true); return; }
+  try {
+    const tx = await state.contract.setTreasury(addr);
+    await tx.wait();
+    toast("Treasury updated ✅");
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Treasury update failed.", true);
+  }
+}
+
+async function adminTogglePause() {
+  try {
+    const tx = state.isPaused ? await state.contract.unpause() : await state.contract.pause();
+    await tx.wait();
+    toast(state.isPaused ? "Purchases resumed ✅" : "Purchases paused ⏸️");
+    await refreshAll();
+  } catch (err) {
+    toast(err?.shortMessage || err?.message || "Action failed.", true);
+  }
+}
+
+renderProductCards();
+$("#connectBtn").addEventListener("click", connectWallet);
+$("#switchNetBtn").addEventListener("click", switchNetwork);
+$("#wantedChainName").textContent = CONFIG.CHAIN_NAME;
+
+document.querySelectorAll("[data-admin-set-price]").forEach((btn) =>
+  btn.addEventListener("click", () => adminSetPrice(Number(btn.dataset.adminSetPrice)))
+);
+document.querySelectorAll("[data-admin-toggle-active]").forEach((btn) =>
+  btn.addEventListener("click", () => adminToggleActive(Number(btn.dataset.adminToggleActive)))
+);
+$("#adminSetBurnBtn").addEventListener("click", adminSetBurnPct);
+$("#adminSetReferralBtn").addEventListener("click", adminSetReferral);
+$("#adminExecuteBurnBtn").addEventListener("click", adminExecuteBurn);
+$("#adminSetSlippageBtn").addEventListener("click", adminSetSlippage);
+$("#adminSetDealerFeeBtn").addEventListener("click", adminSetDealerFee);
+$("#adminSetDealerBurnBtn").addEventListener("click", adminSetDealerBurn);
+$("#adminGrantDealerBtn").addEventListener("click", () => adminSetDealerStatusFor(true));
+$("#adminRevokeDealerBtn").addEventListener("click", () => adminSetDealerStatusFor(false));
+$("#adminSetReferrerBtn").addEventListener("click", adminSetReferrerOverride);
+$("#registerBtn").addEventListener("click", registerDealer);
+$("#adminSetTreasuryBtn").addEventListener("click", adminSetTreasury);
+$("#adminPauseBtn").addEventListener("click", adminTogglePause);
+
+if (CONFIG.CONTRACT_ADDRESS === "0x0000000000000000000000000000000000000000") {
+  $("#setupBanner").style.display = "flex";
+}
+</script>
+</body>
+</html>
